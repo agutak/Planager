@@ -7,6 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Planager.API.Application.Services;
+using Planager.API.Domain.Repositories;
+using Planager.API.Infrastructure;
+using Planager.API.Persistence.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,29 +27,32 @@ namespace Planager.API
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<JobsRegistry>();
+            services.AddSingleton<IJobAppointmentsRepository, JobAppointmentsRepository>();
+            services.AddScoped<IJobsManagementService, JobsManagementService>();
 
+            services.AddHostedService<JobsBackgroundRunner>();
+            
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Planager.API", Version = "v1" });
+                c.SwaggerDoc("v1.0", new OpenApiInfo { Title = "Planager API", Version = "v1.0" });
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
+            if (env.IsDevelopment() || env.IsEnvironment("Local"))
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Planager.API v1"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1.0/swagger.json", "Planager API v1.0"));
             }
 
             app.UseHttpsRedirection();
-
+            
             app.UseRouting();
 
             app.UseAuthorization();
